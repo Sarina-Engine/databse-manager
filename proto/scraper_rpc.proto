@@ -1,0 +1,49 @@
+syntax = "proto3";
+package scraper_rpc;
+
+service ScraperService{
+	rpc SendCategory (CategoryList) returns (DBResponse);
+	rpc SendComment (CommentList) returns (DBResponse);
+	rpc SendProduct (ProductList) returns (DBResponse);
+}
+
+message CategoryList{
+	repeated Category category_vec = 1;
+}
+
+message Category{
+	int32 id = 1;
+	string title_fa = 2;
+	string code = 3;
+	int32 parent_cat = 4;
+}
+
+
+message CommentList{
+	repeated Comment comment_vec = 1;
+}
+
+message Comment{
+	int32 id = 1;
+	int32 product_id = 2;
+	string title = 3;
+	string body = 4;
+	double rate = 5;
+}
+
+message ProductList{
+   repeated Product product_vec= 1;
+}
+
+message Product {
+   int32 id  = 1;
+   string title_fa = 2;
+   double rate = 3;
+   int32 count = 4;
+   int32 cat_id = 5;
+   bool done = 6;
+}
+
+message DBResponse {
+   bool status = 1;
+}
