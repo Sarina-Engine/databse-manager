@@ -16,6 +16,7 @@ table! {
         product_id -> Int4,
         body -> Text,
         rate -> Float8,
+        done -> Bool,
     }
 }
 
@@ -23,7 +24,7 @@ table! {
     features (vid) {
         vid -> Int4,
         name -> Text,
-        value -> Float8,
+        value -> Text,
         product_id -> Int4,
     }
 }
@@ -40,9 +41,42 @@ table! {
     }
 }
 
+table! {
+    scores (vid) {
+        vid -> Int4,
+        product_id -> Int4,
+        emotion -> Float8,
+        satisfaction -> Float8,
+        recommended -> Float8,
+        feeling -> Float8,
+    }
+}
+
+table! {
+    sentiments (vid) {
+        vid -> Int4,
+        comment_id -> Int4,
+        recommended -> Float8,
+        not_recommended -> Float8,
+        no_idea -> Float8,
+        sad -> Float8,
+        happy -> Float8,
+        positive -> Float8,
+        negative -> Float8,
+        furious -> Float8,
+        angry -> Float8,
+        neutral -> Float8,
+        happy2 -> Float8,
+        delighted -> Float8,
+        done -> Bool,
+    }
+}
+
 allow_tables_to_appear_in_same_query!(
     categories,
     comments,
     features,
     products,
+    scores,
+    sentiments,
 );

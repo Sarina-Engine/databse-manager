@@ -13,6 +13,14 @@ path = "src/bin/reciever/mod.rs"
 name = "sender"
 path = "src/bin/sender/mod.rs"
 
+[[bin]]
+name = "prediction"
+path = "src/bin/prediction/mod.rs"
+
+[[bin]]
+name = "assigner"
+path = "src/bin/assigner/mod.rs"
+
 [dependencies]
 tonic = "0.8"
 prost = "0.11"

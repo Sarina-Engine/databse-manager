@@ -5,6 +5,7 @@ service ScraperService{
 	rpc SendCategory (CategoryList) returns (DBResponse);
 	rpc SendComment (CommentList) returns (DBResponse);
 	rpc SendProduct (ProductList) returns (DBResponse);
+	rpc SendFeature (FeatureList) returns (DBResponse);
 }
 
 message CategoryList{
@@ -42,6 +43,16 @@ message Product {
    int32 count = 4;
    int32 cat_id = 5;
    bool done = 6;
+}
+
+message FeatureList{
+	repeated Feature ft = 1;
+}
+
+message Feature{
+	int32 product_id = 1;
+	string name = 2;
+	string value = 3;
 }
 
 message DBResponse {

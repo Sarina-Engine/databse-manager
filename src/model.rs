@@ -1,18 +1,194 @@
-use super::schema::{categories, comments, products};
+use super::schema::{categories, comments, features, products, scores, sentiments};
+use crate::services::assigner_rpc::ScorePrediction;
+use crate::services::prediction_rpc::Prediction;
 use crate::services::scraper_rpc::{
-    Category as CategoryS, CategoryList, Comment as CommentS, CommentList, Product as ProductS,
-    ProductList,
+    Category as CategoryS, CategoryList, Comment as CommentS, CommentList, Feature as FeatureS,
+    FeatureList, Product as ProductS, ProductList,
 };
 use diesel::prelude::*;
 
 #[derive(Debug, Queryable)]
+pub struct Score {
+    pub vid: i32,
+    pub product_id: i32,
+    pub emotion: f64,
+    pub satisfaction: f64,
+    pub recommended: f64,
+    pub feeling: f64,
+}
+
+impl Score {
+    pub fn add(scores: ScorePrediction, product_id: i32, conn: &mut PgConnection) -> () {
+        let scores = NewScore::new(scores, product_id);
+        diesel::insert_into(scores::table)
+            .values(scores)
+            .execute(conn)
+            .unwrap();
+        ()
+    }
+}
+
+#[derive(Debug, Insertable)]
+#[diesel(table_name = scores)]
+pub struct NewScore {
+    pub product_id: i32,
+    pub emotion: f64,
+    pub satisfaction: f64,
+    pub recommended: f64,
+    pub feeling: f64,
+}
+
+impl NewScore {
+    pub fn new(scores: ScorePrediction, product_id: i32) -> Self {
+        let scores = scores.scores;
+        let emotion = scores[0];
+        let satisfaction = scores[1];
+        let recommended = scores[2];
+        let feeling = scores[3];
+
+        Self {
+            product_id,
+            emotion: emotion.into(),
+            satisfaction: satisfaction.into(),
+            recommended: recommended.into(),
+            feeling: feeling.into(),
+        }
+    }
+}
+
+#[derive(Debug, Queryable)]
+pub struct Sentiment {
+    pub vid: i32,
+    pub comment_id: i32,
+    pub recommended: f64,
+    pub not_recommended: f64,
+    pub no_idea: f64,
+    pub sad: f64,
+    pub happy: f64,
+    pub positive: f64,
+    pub negative: f64,
+    pub furious: f64,
+    pub angry: f64,
+    pub neutral: f64,
+    pub happy2: f64,
+    pub delighted: f64,
+    pub done: bool,
+}
+
+impl Sentiment {
+    pub fn add(prediction: Prediction, comment_id: i32, conn: &mut PgConnection) -> () {
+        let sentiment = NewSentiment::new(prediction, comment_id);
+        diesel::insert_into(sentiments::table)
+            .values(sentiment)
+            .execute(conn)
+            .unwrap();
+        ()
+    }
+
+    pub fn get_un_finished(conn: &mut PgConnection) -> Vec<Sentiment> {
+        use self::sentiments::dsl::*;
+        sentiments
+            .filter(done.eq(false))
+            .load::<Sentiment>(conn)
+            .expect("Error loading")
+    }
+    pub fn set_to_finished(conn: &mut PgConnection, c_id: i32) -> () {
+        use self::sentiments::dsl::*;
+        diesel::update(sentiments.filter(comment_id.eq(c_id)))
+            .set(done.eq(true))
+            .execute(conn)
+            .unwrap();
+        ()
+    }
+}
+
+#[derive(Debug, Insertable, Default)]
+#[diesel(table_name = sentiments)]
+pub struct NewSentiment {
+    pub comment_id: i32,
+    pub recommended: f64,
+    pub not_recommended: f64,
+    pub no_idea: f64,
+    pub sad: f64,
+    pub happy: f64,
+    pub positive: f64,
+    pub negative: f64,
+    pub furious: f64,
+    pub angry: f64,
+    pub neutral: f64,
+    pub happy2: f64,
+    pub delighted: f64,
+}
+
+impl NewSentiment {
+    pub fn new(prediction: Prediction, comment_id: i32) -> Self {
+        let digi = &prediction.digisentiment.get("digi").unwrap().sentiment;
+        let snapp = &prediction.snappsentiment.get("snapp").unwrap().sentiment;
+        let binary = &prediction.binarysentiment.get("binary").unwrap().sentiment;
+        let multi = &prediction.mulitsentiment.get("multi").unwrap().sentiment;
+        NewSentiment {
+            comment_id: comment_id,
+            recommended: digi[0].score.into(),
+            not_recommended: digi[1].score.into(),
+            no_idea: digi[2].score.into(),
+            sad: snapp[0].score.into(),
+            happy: snapp[1].score.into(),
+            positive: binary[0].score.into(),
+            negative: binary[1].score.into(),
+            furious: multi[0].score.into(),
+            angry: multi[1].score.into(),
+            neutral: multi[2].score.into(),
+            happy2: multi[3].score.into(),
+            delighted: multi[4].score.into(),
+        }
+    }
+}
+
+#[derive(Debug, Queryable)]
+pub struct Feature {
+    pub vid: i32,
+    pub product_id: i32,
+    pub name: String,
+    pub value: String,
+}
+
+impl Feature {
+    pub fn add(feature_vec: FeatureList, conn: &mut PgConnection) -> () {
+        let feature_vec: Vec<NewFeature> = feature_vec.ft.into_iter().map(|x| x.into()).collect();
+        diesel::insert_into(features::table)
+            .values(feature_vec)
+            .execute(conn)
+            .unwrap();
+        ()
+    }
+}
+
+#[derive(Debug, Insertable)]
+#[diesel(table_name=features)]
+pub struct NewFeature {
+    pub product_id: i32,
+    pub name: String,
+    pub value: String,
+}
+
+impl From<FeatureS> for NewFeature {
+    fn from(c: FeatureS) -> Self {
+        NewFeature {
+            product_id: c.product_id,
+            name: c.name,
+            value: c.value,
+        }
+    }
+}
+
+#[derive(Debug, Queryable, Identifiable)]
 pub struct Comment {
     pub vid: i32,
     pub id: i32,
     pub product_id: i32,
-    pub title: Option<String>,
     pub body: String,
-    pub rating: i32,
+    pub rating: f64,
+    pub done: bool,
 }
 
 impl Comment {
@@ -24,6 +200,29 @@ impl Comment {
             .collect();
         diesel::insert_into(comments::table)
             .values(comment_vec)
+            .execute(conn)
+            .unwrap();
+        ()
+    }
+    pub fn get(comment_id: i32, conn: &mut PgConnection) -> Comment {
+        use self::comments::dsl::*;
+        let mut comment = comments
+            .filter(id.eq(comment_id))
+            .load::<Comment>(conn)
+            .expect("Error Loading!");
+        return comment.pop().unwrap();
+    }
+    pub fn get_un_finished(conn: &mut PgConnection) -> Vec<Comment> {
+        use self::comments::dsl::*;
+        comments
+            .filter(done.eq(false))
+            .load::<Comment>(conn)
+            .expect("Error loading")
+    }
+    pub fn set_to_finished(conn: &mut PgConnection, comment_id: i32) -> () {
+        use self::comments::dsl::*;
+        diesel::update(comments.filter(id.eq(comment_id)))
+            .set(done.eq(true))
             .execute(conn)
             .unwrap();
         ()
@@ -61,7 +260,7 @@ pub struct NewProduct {
     done: bool,
 }
 
-#[derive(Debug, Queryable)]
+#[derive(Debug, Queryable, Identifiable)]
 pub struct Product {
     pub vid: i32,
     pub id: i32,

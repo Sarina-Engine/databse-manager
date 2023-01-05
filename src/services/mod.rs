@@ -2,7 +2,7 @@ use crate::db::establish_connection;
 use scraper_rpc::scraper_service_server::ScraperService;
 use scraper_rpc::DbResponse;
 use scraper_rpc::{Category, Product};
-use scraper_rpc::{CategoryList, CommentList, ProductList};
+use scraper_rpc::{CategoryList, CommentList, FeatureList, ProductList};
 use tonic::{Request, Response, Status};
 pub mod scraper_rpc {
     tonic::include_proto!("scraper_rpc");
@@ -11,8 +11,29 @@ pub mod scraper_rpc {
 #[derive(Default, Debug)]
 pub struct ScraperRPCService;
 
+pub mod prediction_rpc {
+    tonic::include_proto!("prediction");
+}
+
+pub mod assigner_rpc {
+    tonic::include_proto!("assigner");
+}
+
 #[tonic::async_trait]
 impl ScraperService for ScraperRPCService {
+    async fn send_feature(
+        &self,
+        request: Request<FeatureList>,
+    ) -> Result<Response<DbResponse>, Status> {
+        use crate::model::Feature as FeatureD;
+        let mut conn = establish_connection();
+
+        FeatureD::add(request.into_inner(), &mut conn);
+
+        let reply = DbResponse { status: true };
+        println!("{:?}", reply);
+        Ok(Response::new(reply))
+    }
     async fn send_category(
         &self,
         request: Request<CategoryList>,
@@ -30,12 +51,16 @@ impl ScraperService for ScraperRPCService {
         &self,
         request: Request<ProductList>,
     ) -> Result<Response<DbResponse>, Status> {
+        use crate::model::Category as CategoryD;
         use crate::model::Product as ProductDb;
         let mut conn = establish_connection();
-        ProductDb::add(request.into_inner(), &mut conn);
+        let request = request.into_inner();
+        let cat_id = request.product_vec[0].cat_id;
+        ProductDb::add(request, &mut conn);
+        CategoryD::set_to_finished(&mut conn, cat_id);
 
         let reply = DbResponse { status: true };
-        println!("{:?}", reply);
+        println!("{:?} Category: {} is done", reply, cat_id);
         Ok(Response::new(reply))
     }
     async fn send_comment(
@@ -43,11 +68,15 @@ impl ScraperService for ScraperRPCService {
         request: Request<CommentList>,
     ) -> Result<Response<DbResponse>, Status> {
         use crate::model::Comment as CommentDb;
+        use crate::model::Product as ProductD;
         let mut conn = establish_connection();
-        CommentDb::add(request.into_inner(), &mut conn);
+        let request = request.into_inner();
+        let product_id = request.comment_vec[0].product_id;
+        CommentDb::add(request, &mut conn);
+        ProductD::set_to_finished(&mut conn, product_id);
 
         let reply = DbResponse { status: true };
-        println!("{:?}", reply);
+        println!("{:?} Product: {} is done", reply, product_id);
         Ok(Response::new(reply))
     }
 }

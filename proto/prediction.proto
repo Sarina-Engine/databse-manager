@@ -1,0 +1,40 @@
+syntax = "proto3";
+package prediction;
+
+message Sentiment {
+    string label = 1;
+    float score = 2;
+}
+
+message Digisentiment {
+    repeated Sentiment sentiment = 1;
+}
+
+message Snappsentiment {
+    repeated Sentiment sentiment = 1;
+}
+
+message Binarysentiment {
+    repeated Sentiment sentiment = 1;
+}
+
+message Multisentiment {
+    repeated Sentiment sentiment = 1;
+}
+
+message Prediction {
+    string comment = 1;
+    map<string, Digisentiment> digisentiment = 2;
+    map<string, Snappsentiment> snappsentiment = 3;
+    map<string, Binarysentiment> binarysentiment = 4;
+    map<string, Multisentiment> mulitsentiment = 5;
+}
+
+message Comment {
+    string comment = 1;
+}
+
+service PredictSentiment {
+    rpc Predict (Comment) returns (Prediction);
+}
+

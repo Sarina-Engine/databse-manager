@@ -1,0 +1,14 @@
+syntax = "proto3";
+package assigner;
+
+
+message ScorePrediction{
+    repeated double scores = 1;
+}
+
+service AssignScore {
+    rpc Scoring(ScorePrediction) returns (ScorePrediction);
+}
+
+
+
