@@ -26,6 +26,10 @@ message Product{
     int32 id = 1;
     string name = 2;
     double rating = 3;
+    double emotion = 4;
+    double satisfaction = 5;
+    double recommended = 6;
+    double feeling = 7;
 }
 
 message Empty {}

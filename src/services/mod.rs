@@ -62,6 +62,10 @@ impl WebServer for WebServerRPC {
                 id: p.id,
                 name: p.title_fa,
                 rating: scores.overall,
+                emotion: scores.emotion,
+                satisfaction: scores.satisfaction,
+                recommended: scores.recommended,
+                feeling: scores.feeling,
             };
             product_vec.push(product);
         }
