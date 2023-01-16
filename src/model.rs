@@ -334,10 +334,10 @@ impl Product {
             .unwrap();
         ()
     }
-    pub fn get_category_products(conn: &mut PgConnection, cat_id: i32) -> Vec<Product> {
+    pub fn get_category_products(conn: &mut PgConnection, c_id: i32) -> Vec<Product> {
         use self::products::dsl::*;
         products
-            .filter(cat_id.eq(cat_id))
+            .filter(cat_id.eq(c_id))
             .load::<Product>(conn)
             .expect("Error loading")
     }
