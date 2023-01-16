@@ -61,7 +61,7 @@ impl WebServer for WebServerRPC {
             let product = web_server::Product {
                 id: p.id,
                 name: p.title_fa,
-                rating: scores.recommended,
+                rating: scores.overall,
             };
             product_vec.push(product);
         }

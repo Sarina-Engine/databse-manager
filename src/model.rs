@@ -27,10 +27,10 @@ impl Score {
             .unwrap();
         ()
     }
-    pub fn get(conn: &mut PgConnection, product_id: i32) -> Score {
+    pub fn get(conn: &mut PgConnection, p_id: i32) -> Score {
         use self::scores::dsl::*;
         scores
-            .filter(product_id.eq(product_id))
+            .filter(product_id.eq(p_id))
             .load::<Score>(conn)
             .expect("Error loading")
             .pop()
