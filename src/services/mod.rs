@@ -57,7 +57,7 @@ impl WebServer for WebServerRPC {
         let mut product_vec: Vec<web_server::Product> = Vec::new();
         let unrated_products = ProductDb::get_category_products(&mut conn, id);
         for p in unrated_products {
-            let scores = ScoreDb::get(&mut conn, p.id);
+            let scores = ScoreDb::get(&mut conn, p.id).unwrap();
             let product = web_server::Product {
                 id: p.id,
                 name: p.title_fa,

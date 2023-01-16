@@ -20,21 +20,33 @@ pub struct Score {
 
 impl Score {
     pub fn add(scores: ScorePrediction, product_id: i32, conn: &mut PgConnection) -> () {
-        let scores = NewScore::new(scores, product_id);
+        let prev_score = match Self::get(conn, product_id) {
+            Ok(s) => s,
+            Err(_) => Self {
+                vid: 0,
+                product_id: product_id,
+                emotion: 0.0,
+                satisfaction: 0.0,
+                recommended: 0.0,
+                feeling: 0.0,
+                overall: 0.0,
+            },
+        };
+        let scores = NewScore::new(scores, prev_score, product_id);
         diesel::insert_into(scores::table)
             .values(scores)
             .execute(conn)
             .unwrap();
         ()
     }
-    pub fn get(conn: &mut PgConnection, p_id: i32) -> Score {
+    pub fn get(conn: &mut PgConnection, p_id: i32) -> Result<Score, Box<dyn std::error::Error>> {
         use self::scores::dsl::*;
-        scores
-            .filter(product_id.eq(p_id))
-            .load::<Score>(conn)
-            .expect("Error loading")
+        let s = scores
+            .filter(product_id.eq(product_id))
+            .load::<Score>(conn)?
             .pop()
-            .unwrap()
+            .unwrap();
+        Ok(s)
     }
 }
 
@@ -50,13 +62,13 @@ pub struct NewScore {
 }
 
 impl NewScore {
-    pub fn new(scores: ScorePrediction, product_id: i32) -> Self {
+    pub fn new(scores: ScorePrediction, prev_score: Score, product_id: i32) -> Self {
         let scores = scores.scores;
-        let emotion = scores[0];
-        let satisfaction = scores[1];
-        let recommended = scores[2];
-        let feeling = scores[3];
-        let overall = scores[4];
+        let emotion = scores[0] * 0.1 + prev_score.emotion * 0.9;
+        let satisfaction = scores[1] * 0.1 + prev_score.satisfaction * 0.9;
+        let recommended = scores[2] * 0.1 + prev_score.recommended * 0.9;
+        let feeling = scores[3] * 0.1 + prev_score.feeling * 0.9;
+        let overall = scores[4] * 0.1 + prev_score.overall * 0.9;
 
         Self {
             product_id,
