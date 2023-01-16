@@ -78,6 +78,7 @@ CREATE TABLE scores(
 	satisfaction float NOT NULL DEFAULT 0,
 	recommended float NOT NULL DEFAULT 0,
 	feeling float NOT NULL DEFAULT 0,
+	overall float NOT NULL DEFAULT 0,
 
 	PRIMARY KEY(vid)
 );

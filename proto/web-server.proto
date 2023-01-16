@@ -1,0 +1,35 @@
+syntax = "proto3";
+package web_server;
+
+service WebServer{
+	rpc SendCategory (Empty) returns (CategoryList);
+	rpc SendProduct (CategoryID) returns (ProductList);
+}
+
+
+message CategoryList{
+    repeated Category category_vec = 1;
+}
+
+message Category{
+	int32 id = 1;
+	string title_fa = 2;
+	string code = 3;
+	int32 parent_cat = 4;
+}
+
+message ProductList{
+    repeated Product product_vec = 1;
+}
+
+message Product{
+    int32 id = 1;
+    string name = 2;
+    double rating = 3;
+}
+
+message Empty {}
+
+message CategoryID{
+    int32 id = 1;
+}

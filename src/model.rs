@@ -15,6 +15,7 @@ pub struct Score {
     pub satisfaction: f64,
     pub recommended: f64,
     pub feeling: f64,
+    pub overall: f64,
 }
 
 impl Score {
@@ -26,6 +27,15 @@ impl Score {
             .unwrap();
         ()
     }
+    pub fn get(conn: &mut PgConnection, product_id: i32) -> Score {
+        use self::scores::dsl::*;
+        scores
+            .filter(product_id.eq(product_id))
+            .load::<Score>(conn)
+            .expect("Error loading")
+            .pop()
+            .unwrap()
+    }
 }
 
 #[derive(Debug, Insertable)]
@@ -36,6 +46,7 @@ pub struct NewScore {
     pub satisfaction: f64,
     pub recommended: f64,
     pub feeling: f64,
+    pub overall: f64,
 }
 
 impl NewScore {
@@ -45,6 +56,7 @@ impl NewScore {
         let satisfaction = scores[1];
         let recommended = scores[2];
         let feeling = scores[3];
+        let overall = scores[4];
 
         Self {
             product_id,
@@ -52,6 +64,7 @@ impl NewScore {
             satisfaction: satisfaction.into(),
             recommended: recommended.into(),
             feeling: feeling.into(),
+            overall: overall.into(),
         }
     }
 }
@@ -309,6 +322,13 @@ impl Product {
             .unwrap();
         ()
     }
+    pub fn get_category_products(conn: &mut PgConnection, cat_id: i32) -> Vec<Product> {
+        use self::products::dsl::*;
+        products
+            .filter(cat_id.eq(cat_id))
+            .load::<Product>(conn)
+            .expect("Error loading")
+    }
 }
 
 #[derive(Queryable, Identifiable, Debug)]
@@ -369,5 +389,9 @@ impl Category {
             .execute(conn)
             .unwrap();
         ()
+    }
+    pub fn all(conn: &mut PgConnection) -> Vec<Category> {
+        use self::categories::dsl::*;
+        categories.load::<Category>(conn).expect("Error loading")
     }
 }

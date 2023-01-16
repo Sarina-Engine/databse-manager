@@ -49,6 +49,7 @@ table! {
         satisfaction -> Float8,
         recommended -> Float8,
         feeling -> Float8,
+        overall -> Float8,
     }
 }
 
@@ -72,11 +73,4 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(
-    categories,
-    comments,
-    features,
-    products,
-    scores,
-    sentiments,
-);
+allow_tables_to_appear_in_same_query!(categories, comments, features, products, scores, sentiments,);

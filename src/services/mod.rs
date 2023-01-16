@@ -4,6 +4,7 @@ use scraper_rpc::DbResponse;
 use scraper_rpc::{Category, Product};
 use scraper_rpc::{CategoryList, CommentList, FeatureList, ProductList};
 use tonic::{Request, Response, Status};
+use web_server::web_server_server::WebServer;
 pub mod scraper_rpc {
     tonic::include_proto!("scraper_rpc");
 }
@@ -11,12 +12,76 @@ pub mod scraper_rpc {
 #[derive(Default, Debug)]
 pub struct ScraperRPCService;
 
+#[derive(Default, Debug)]
+pub struct WebServerRPC;
+
 pub mod prediction_rpc {
     tonic::include_proto!("prediction");
 }
 
 pub mod assigner_rpc {
     tonic::include_proto!("assigner");
+}
+
+pub mod web_server {
+    tonic::include_proto!("web_server");
+}
+
+#[tonic::async_trait]
+impl WebServer for WebServerRPC {
+    async fn send_category(
+        &self,
+        request: Request<web_server::Empty>,
+    ) -> Result<Response<web_server::CategoryList>, Status> {
+        use crate::model::Category as CategoryDb;
+        let mut conn = establish_connection();
+        let cat_list = CategoryDb::all(&mut conn)
+            .into_iter()
+            .map(|x| x.into())
+            .collect();
+        let reply = web_server::CategoryList {
+            category_vec: cat_list,
+        };
+        println!("{:?}", reply);
+        Ok(Response::new(reply))
+    }
+
+    async fn send_product(
+        &self,
+        request: Request<web_server::CategoryId>,
+    ) -> Result<Response<web_server::ProductList>, Status> {
+        use crate::model::Product as ProductDb;
+        use crate::model::Score as ScoreDb;
+        let mut conn = establish_connection();
+        let id = request.into_inner().id;
+        let mut product_vec: Vec<web_server::Product> = Vec::new();
+        let unrated_products = ProductDb::get_category_products(&mut conn, id);
+        for p in unrated_products {
+            let scores = ScoreDb::get(&mut conn, p.id);
+            let product = web_server::Product {
+                id: p.id,
+                name: p.title_fa,
+                rating: scores.recommended,
+            };
+            product_vec.push(product);
+        }
+        let reply = web_server::ProductList {
+            product_vec: product_vec,
+        };
+        println!("{:?}", reply);
+        Ok(Response::new(reply))
+    }
+}
+use crate::model::Category as CategoryDb;
+impl From<CategoryDb> for web_server::Category {
+    fn from(c: CategoryDb) -> Self {
+        Self {
+            id: c.id,
+            title_fa: c.title_fa,
+            parent_cat: c.parent_cat,
+            code: c.code,
+        }
+    }
 }
 
 #[tonic::async_trait]
