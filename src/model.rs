@@ -20,18 +20,7 @@ pub struct Score {
 
 impl Score {
     pub fn add(scores: ScorePrediction, product_id: i32, conn: &mut PgConnection) -> () {
-        let prev_score = match Self::get(conn, product_id) {
-            Ok(s) => s,
-            Err(_) => Self {
-                vid: 0,
-                product_id: product_id,
-                emotion: 0.0,
-                satisfaction: 0.0,
-                recommended: 0.0,
-                feeling: 0.0,
-                overall: 0.0,
-            },
-        };
+        let prev_score = Self::get(conn, product_id).unwrap();
         let scores = NewScore::new(scores, prev_score, product_id);
         diesel::insert_into(scores::table)
             .values(scores)
@@ -41,11 +30,22 @@ impl Score {
     }
     pub fn get(conn: &mut PgConnection, p_id: i32) -> Result<Score, Box<dyn std::error::Error>> {
         use self::scores::dsl::*;
-        let s = scores
+        let s = match scores
             .filter(product_id.eq(p_id))
             .load::<Score>(conn)?
             .pop()
-            .unwrap();
+        {
+            Some(s) => s,
+            None => Self {
+                vid: 0,
+                product_id: p_id,
+                emotion: 0.0,
+                satisfaction: 0.0,
+                recommended: 0.0,
+                feeling: 0.0,
+                overall: 0.0,
+            },
+        };
         Ok(s)
     }
 }
