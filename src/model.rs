@@ -42,7 +42,7 @@ impl Score {
     pub fn get(conn: &mut PgConnection, p_id: i32) -> Result<Score, Box<dyn std::error::Error>> {
         use self::scores::dsl::*;
         let s = scores
-            .filter(product_id.eq(product_id))
+            .filter(product_id.eq(p_id))
             .load::<Score>(conn)?
             .pop()
             .unwrap();
