@@ -16,6 +16,7 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
         let c = Request::new(c);
         let resp = client.predict(c).await?;
+        println!("{:?}", resp);
         Sentiment::add(resp.into_inner(), c_id, &mut conn);
         Comment::set_to_finished(&mut conn, c_id);
     }

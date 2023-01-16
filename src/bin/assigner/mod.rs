@@ -7,7 +7,7 @@ use tonic::Request;
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = establish_connection();
-    let mut client = AssignScoreClient::connect("http://[::1]:50052").await?;
+    let mut client = AssignScoreClient::connect("http://[::1]:50056").await?;
     let sentiment_vec = Sentiment::get_un_finished(&mut conn);
     for s in sentiment_vec {
         let c_id = s.comment_id;
@@ -29,6 +29,7 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
         let sentiment = Request::new(sentiment);
         let resp = client.scoring(sentiment).await?.into_inner();
+        println!("{:?}", resp);
         let product_id = Comment::get(c_id, &mut conn).product_id;
         Score::add(resp, product_id, &mut conn);
         Comment::set_to_finished(&mut conn, c_id);
